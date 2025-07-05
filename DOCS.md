@@ -52,3 +52,10 @@ The one issue I faced was with `flush` operations. In a multi-threaded environme
 As per the benchmarks, the performance of concurrent operations improved significantly, especially for `Set` and `Get` operations. The use of shards allowed for better distribution of keys and reduced contention, leading to faster response times. But the performance of operation in single-threaded enviromnet was more of a hit and miss, depending on the operation type.
 
 The slower performance of operations in single threaded environment was due to the overhead of managing multiple shards, which mainly included getting the index of the shard based on the key's hash. This overhead was negligible in a multi-threaded environment where contention was reduced, but in a single-threaded scenario, it added unnecessary complexity and latency.
+
+Another feature of this phase is **TTL - Time to live** for keys.
+
+At first, I went with the passive approach of checking the TTL during `Get` and `Exists` operations. If the key had expired, it would be deleted from the store. This approach worked but was not efficient, as it required checking the TTL every time a key was accessed. And, if the key was not accessed frequently, it would remain in the store until it was explicitly deleted or the store was flushed.
+
+
+So for solving the problem of unaccessed keys, I implemented an active cleanup mechanism using Janitor function (which runs in a separate goroutine). The Janitor periodically checks all shards for expired keys and removes them. This approach ensures that expired keys are removed from the store without requiring access to them, keeping the store clean and efficient.
