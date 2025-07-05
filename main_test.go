@@ -1,6 +1,7 @@
 package kache
 
 import (
+	"math/rand"
 	"strconv"
 	"testing"
 )
@@ -95,4 +96,65 @@ func BenchmarkKacheFlush(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		kache.Flush()
 	}
+}
+
+func BenchmarkKacheConcurrentSet(b *testing.B) {
+	kache := NewKache()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			key := "key" + strconv.Itoa(rand.Intn(10000))
+			value := "value" + strconv.Itoa(rand.Intn(10000))
+			kache.Set(key, value)
+		}
+	})
+}
+
+func BenchmarkKacheConcurrentGet(b *testing.B) {
+	kache := NewKache()
+	for i := 0; i < b.N; i++ {
+		kache.Set("key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
+	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			key := "key" + strconv.Itoa(rand.Intn(10000))
+			kache.Get(key)
+		}
+	})
+}
+
+func BenchmarkKacheConcurrentDelete(b *testing.B) {
+	kache := NewKache()
+	for i := 0; i < b.N; i++ {
+		kache.Set("key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
+	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			key := "key" + strconv.Itoa(rand.Intn(10000))
+			kache.Delete(key)
+		}
+	})
+}
+
+func BenchmarkKacheConcurrentExists(b *testing.B) {
+	kache := NewKache()
+	for i := 0; i < b.N; i++ {
+		kache.Set("key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
+	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			key := "key" + strconv.Itoa(rand.Intn(10000))
+			kache.Exists(key)
+		}
+	})
+}
+func BenchmarkKacheConcurrentFlush(b *testing.B) {
+	kache := NewKache()
+	for i := 0; i < b.N; i++ {
+		kache.Set("key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
+	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			kache.Flush()
+		}
+	})
 }
