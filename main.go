@@ -4,24 +4,33 @@ import (
 	"sync"
 )
 
-type Kache struct {
+var ShardsCount = 16
+
+type Shard struct {
 	mu    sync.RWMutex
 	store map[string]string
 }
 
-func NewKache() *Kache {
-	return &Kache{
-		store: map[string]string{},
+type ShardedMap []*Shard
+
+func NewKache() *ShardedMap {
+	shards := make(ShardedMap, ShardsCount)
+	for i := range shards {
+		shardsMap := make(map[string]string)
+		shards[i] = &Shard{store: shardsMap}
 	}
+	return &shards
 }
 
-func (kache *Kache) Set(key, value string) {
+func (shardmap *ShardedMap) Set(key, value string) {
+	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
 	kache.store[key] = value
 }
 
-func (kache *Kache) Get(key string) (string, bool) {
+func (shardmap *ShardedMap) Get(key string) (string, bool) {
+	kache := (*shardmap).getShard(key)
 	kache.mu.RLock()
 	defer kache.mu.RUnlock()
 
@@ -32,38 +41,25 @@ func (kache *Kache) Get(key string) (string, bool) {
 	return kache.store[key], true
 }
 
-func (kache *Kache) Delete(key string) {
+func (shardmap *ShardedMap) Delete(key string) {
+	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
 	delete(kache.store, key)
 }
 
-func (kache *Kache) Exists(key string) bool {
+func (shardmap *ShardedMap) Exists(key string) bool {
+	kache := (*shardmap).getShard(key)
 	kache.mu.RLock()
 	defer kache.mu.RUnlock()
 	_, ok := kache.store[key]
 	return ok
 }
 
-func (kache *Kache) Size() int {
-	kache.mu.RLock()
-	defer kache.mu.RUnlock()
-	return len(kache.store)
-}
-
-func (kache *Kache) Flush() {
-	kache.mu.Lock()
-	defer kache.mu.Unlock()
-	clear(kache.store)
-}
-
-func (kache *Kache) Keys() []string {
-	kache.mu.RLock()
-	defer kache.mu.RUnlock()
-	keys := make([]string, 0, len(kache.store))
-	for key := range kache.store {
-		keys = append(keys, key)
+func (shardmap *ShardedMap) Flush() {
+	for _, shard := range *shardmap {
+		shard.mu.Lock()
+		shard.store = make(map[string]string)
+		shard.mu.Unlock()
 	}
-
-	return keys
 }
