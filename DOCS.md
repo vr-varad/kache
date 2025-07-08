@@ -59,3 +59,9 @@ At first, I went with the passive approach of checking the TTL during `Get` and 
 
 
 So for solving the problem of unaccessed keys, I implemented an active cleanup mechanism using Janitor function (which runs in a separate goroutine). The Janitor periodically checks all shards for expired keys and removes them. This approach ensures that expired keys are removed from the store without requiring access to them, keeping the store clean and efficient.
+
+One thing I focused was to keep a limit on the number of keys in the store. If the number of keys exceeds a certain threshold, the Janitor will also remove the least recently used (LRU) keys to maintain a manageable size. This helps prevent memory bloat and ensures that the store remains performant even with a large number of keys.
+
+The implementation of LRU is simple, a linked list and a index map to keep track of the order of keys. When a key is accessed, it is moved to the front of the list, and when a key is evicted, it is removed from both the list and the index map. This allows for efficient LRU eviction while maintaining the order of keys.
+
+This helps to keep a limit on the number of keys in the store, ensuring that the store remains performant even with a large number of keys. The Janitor runs periodically to check for expired keys and remove them, keeping the store clean and efficient.
