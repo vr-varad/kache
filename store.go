@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-func (shardmap *shardedMap) Set(key, value string, options options) {
+func (shardmap *shardedMap) Set(key, value string, Options Options) {
 	kache := getShard(key, *shardmap)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
 
-	ttl := time.Now().Add(time.Duration(options.TTL) * time.Second)
-	if options.TTL <= 0 {
+	ttl := time.Now().Add(time.Duration(Options.TTL) * time.Second)
+	if Options.TTL <= 0 {
 		ttl = time.Time{}
 	}
 
@@ -53,6 +53,11 @@ func (shardmap *shardedMap) Get(key string) (string, bool) {
 		return "", false
 	}
 
+	if item.ttl.IsZero() {
+		kache.lru.MoveToFront(kache.index[key])
+		return item.value, true
+	}
+
 	if time.Now().After(kache.store[key].ttl) {
 		delete(kache.store, key)
 		kache.lru.Remove(kache.index[key])
@@ -86,6 +91,12 @@ func (shardmap *shardedMap) Exists(key string) bool {
 	if !ok {
 		return false
 	}
+
+	if kache.store[key].ttl.IsZero() {
+		kache.lru.MoveToFront(kache.index[key])
+		return true
+	}
+
 	if time.Now().After(kache.store[key].ttl) {
 		kache.lru.Remove(kache.index[key])
 		delete(kache.store, key)

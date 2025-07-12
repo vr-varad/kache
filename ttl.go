@@ -1,6 +1,8 @@
 package kache
 
-import "time"
+import (
+	"time"
+)
 
 func StartJanitor(interval time.Duration, sm *shardedMap) {
 	for _, shard := range *sm {
@@ -10,9 +12,13 @@ func StartJanitor(interval time.Duration, sm *shardedMap) {
 
 func runJanitor(interval time.Duration, s *shard) {
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 	for range ticker.C {
 		s.mu.Lock()
 		for key, item := range s.store {
+			if item.ttl.IsZero() {
+				continue // No TTL set, skip this item
+			}
 			if time.Now().After(item.ttl) {
 				delete(s.store, key)
 			}

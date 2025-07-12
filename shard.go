@@ -37,6 +37,6 @@ func NewKache() *shardedMap {
 	return &shards
 }
 
-type options struct {
+type Options struct {
 	TTL int64
 }

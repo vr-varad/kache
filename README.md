@@ -27,7 +27,7 @@ The Least Recently Used (LRU) eviction policy is used to manage memory efficient
 
 ### Key Operations
 
-#### `Set("key", "value", options)`
+#### `Set("key", "value", kache.options)`
 
 Sets a value for a given key with optional parameters.
 
@@ -46,3 +46,146 @@ Checks if a key exists in the datastore.
 #### `Flush()`
 
 Clears all key-value pairs in the datastore.
+
+## Installation
+
+```bash
+go get github.com/vr-varad/kache
+```
+
+---
+
+## Usage
+
+### Basic Example
+
+```go
+import (
+    "github.com/vr-varad/kache"
+    "time"
+)
+
+func main() {
+    cache := kache.NewKache()
+
+    cache.Set("foo", "bar", kache.Options{TTL: 10}) // TTL in seconds
+
+    value, exists := cache.Get("foo")
+    if exists {
+        fmt.Println("Value:", value) // Output: bar
+    }
+}
+```
+
+---
+
+## ✅ Test Cases & Use Cases
+
+### 1. **Set and Get**
+
+Set a key and get it back before TTL expires.
+
+```go
+kache := NewKache()
+kache.Set("key1", "value1", kache.Options{TTL: 10})
+
+value, exists := kache.Get("key1")
+// ✅ value should be "value1"
+```
+
+---
+
+### 2. **Get Non-Existent Key**
+
+Try to get a key that was never set.
+
+```go
+_, exists := kache.Get("nonexistent")
+// ❌ should return false
+```
+
+---
+
+### 3. **Delete Key**
+
+Delete an existing key and ensure it no longer exists.
+
+```go
+kache.Set("key1", "value1", kache.Options{TTL: 10})
+kache.Delete("key1")
+_, exists := kache.Get("key1")
+// ❌ should return false
+```
+
+---
+
+### 4. **Exists Check**
+
+Verify whether a key exists in the cache.
+
+```go
+kache.Set("key1", "value1", kache.Options{TTL: 10})
+
+kache.Exists("key1")        // ✅ should return true
+kache.Exists("nonexistent") // ❌ should return false
+```
+
+---
+
+### 5. **Flush the Cache**
+
+Flush the entire cache and verify that no keys exist afterward.
+
+```go
+kache.Set("key1", "value1", kache.Options{TTL: 10})
+kache.Set("key2", "value2", kache.Options{TTL: 10})
+kache.Flush()
+// ❌ kache.Exists("key1") or kache.Exists("key2") should be false
+```
+
+---
+
+### 6. **Time-to-Live (TTL) Expiry**
+
+Keys should expire after their TTL has passed.
+
+```go
+kache.Set("key1", "value1", kache.Options{TTL: 1}) // 1 second TTL
+
+time.Sleep(2 * time.Second)
+_, exists := kache.Get("key1")
+// ❌ should return false as TTL has expired
+```
+
+---
+
+### 7. **Background Janitor**
+
+Expired keys are automatically removed from memory by the janitor goroutine (runs every 10s by default).
+
+```go
+kache.Set("key1", "value1", kache.Options{TTL: 1})
+time.Sleep(15 * time.Second)
+_, exists := kache.Get("key1")
+// ❌ key should be cleaned up by janitor
+```
+
+---
+
+## ⌛️ TTL vs No TTL
+
+* ✅ **With TTL**: Keys will expire after `n` seconds.
+
+  ```go
+  kache.Set("key", "value", kache.Options{TTL: 30}) // expires in 30s
+  ```
+
+* 🟢 **Without TTL** (default: never expires): You can pass `kache.Options{TTL: 0}` or skip TTL logic in your implementation.
+
+  ```go
+  kache.Set("key", "value", kache.Options{}) // no expiration
+  ```
+
+> You can optionally enhance `Set()` to interpret `0` TTL as "never expire."
+
+---
