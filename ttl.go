@@ -2,13 +2,13 @@ package kache
 
 import "time"
 
-func (sm *shardedMap) StartJanitor(interval time.Duration) {
+func StartJanitor(interval time.Duration, sm *shardedMap) {
 	for _, shard := range *sm {
-		go shard.runJanitor(interval)
+		go runJanitor(interval, shard)
 	}
 }
 
-func (s *shard) runJanitor(interval time.Duration) {
+func runJanitor(interval time.Duration, s *shard) {
 	ticker := time.NewTicker(interval)
 	for range ticker.C {
 		s.mu.Lock()

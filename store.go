@@ -6,7 +6,7 @@ import (
 )
 
 func (shardmap *shardedMap) Set(key, value string, options options) {
-	kache := (*shardmap).getShard(key)
+	kache := getShard(key, *shardmap)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (shardmap *shardedMap) Set(key, value string, options options) {
 }
 
 func (shardmap *shardedMap) Get(key string) (string, bool) {
-	kache := (*shardmap).getShard(key)
+	kache := getShard(key, *shardmap)
 	kache.mu.Lock()
 	item, ok := kache.store[key]
 	defer kache.mu.Unlock()
@@ -66,7 +66,7 @@ func (shardmap *shardedMap) Get(key string) (string, bool) {
 }
 
 func (shardmap *shardedMap) Delete(key string) {
-	kache := (*shardmap).getShard(key)
+	kache := getShard(key, *shardmap)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
 	if _, ok := kache.index[key]; !ok {
@@ -78,7 +78,7 @@ func (shardmap *shardedMap) Delete(key string) {
 }
 
 func (shardmap *shardedMap) Exists(key string) bool {
-	kache := (*shardmap).getShard(key)
+	kache := getShard(key, *shardmap)
 	kache.mu.Lock()
 	_, ok := kache.store[key]
 	defer kache.mu.Unlock()
