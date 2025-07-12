@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func StartJanitor(interval time.Duration, sm *shardedMap) {
+func startJanitor(interval time.Duration, sm *shardedMap) {
 	for _, shard := range *sm {
 		go runJanitor(interval, shard)
 	}

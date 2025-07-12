@@ -33,7 +33,7 @@ func NewKache() *shardedMap {
 			index: make(map[string]*list.Element),
 		}
 	}
-	go StartJanitor(10*time.Second, &shards) // Start janitor to clean up expired items every 5 seconds
+	go startJanitor(10*time.Second, &shards) // Start janitor to clean up expired items every 5 seconds
 	return &shards
 }
 
