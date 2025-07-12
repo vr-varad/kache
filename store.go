@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (shardmap *ShardedMap) Set(key, value string, options Options) {
+func (shardmap *shardedMap) Set(key, value string, options options) {
 	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
@@ -37,13 +37,13 @@ func (shardmap *ShardedMap) Set(key, value string, options Options) {
 
 	kache.index[key] = kache.lru.PushFront(key)
 
-	kache.store[key] = Item{
+	kache.store[key] = item{
 		value: value,
 		ttl:   ttl,
 	}
 }
 
-func (shardmap *ShardedMap) Get(key string) (string, bool) {
+func (shardmap *shardedMap) Get(key string) (string, bool) {
 	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	item, ok := kache.store[key]
@@ -65,7 +65,7 @@ func (shardmap *ShardedMap) Get(key string) (string, bool) {
 	return item.value, true
 }
 
-func (shardmap *ShardedMap) Delete(key string) {
+func (shardmap *shardedMap) Delete(key string) {
 	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	defer kache.mu.Unlock()
@@ -77,7 +77,7 @@ func (shardmap *ShardedMap) Delete(key string) {
 	delete(kache.index, key)
 }
 
-func (shardmap *ShardedMap) Exists(key string) bool {
+func (shardmap *shardedMap) Exists(key string) bool {
 	kache := (*shardmap).getShard(key)
 	kache.mu.Lock()
 	_, ok := kache.store[key]
@@ -98,10 +98,10 @@ func (shardmap *ShardedMap) Exists(key string) bool {
 	return true
 }
 
-func (shardmap *ShardedMap) Flush() {
+func (shardmap *shardedMap) Flush() {
 	for _, shard := range *shardmap {
 		shard.mu.Lock()
-		shard.store = make(map[string]Item)
+		shard.store = make(map[string]item)
 		shard.lru = list.New()
 		shard.index = make(map[string]*list.Element)
 		shard.mu.Unlock()

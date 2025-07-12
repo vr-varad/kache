@@ -6,28 +6,28 @@ import (
 	"time"
 )
 
-var ShardsCount = 16
+var ShardsCount = 16  // Number of shards in the sharded map
 var MaxEntries = 1000 // Maximum number of entries per shard
 
-type Item struct {
+type item struct {
 	value string
 	ttl   time.Time
 }
 
-type Shard struct {
+type shard struct {
 	mu    sync.RWMutex
-	store map[string]Item
+	store map[string]item
 	lru   *list.List
 	index map[string]*list.Element
 }
 
-type ShardedMap []*Shard
+type shardedMap []*shard
 
-func NewKache() *ShardedMap {
-	shards := make(ShardedMap, ShardsCount)
+func NewKache() *shardedMap {
+	shards := make(shardedMap, ShardsCount)
 	for i := range shards {
-		shardsMap := make(map[string]Item)
-		shards[i] = &Shard{
+		shardsMap := make(map[string]item)
+		shards[i] = &shard{
 			store: shardsMap,
 			lru:   list.New(),
 			index: make(map[string]*list.Element),
@@ -37,6 +37,6 @@ func NewKache() *ShardedMap {
 	return &shards
 }
 
-type Options struct {
+type options struct {
 	TTL int64
 }
